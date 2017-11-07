@@ -17,7 +17,7 @@ gst-launch v4l2src ! decodebin ! queue ! videoconvert ! jpegenc ! queue ! multip
 gst-launch udpsrc port=8554 ! multipartdemux ! jpegparse ! jpegdec ! videoconvert ! autovideosink
 ```
 ```
-GST_DEBUG=4 ./cvgst
+GST_DEBUG=4 ./QtGstVideoPlayer
 ```
 --------------------
 # RTP payload
@@ -40,5 +40,5 @@ gst-launch --gst-debug=4 udpsrc port=8554 caps="application/x-rtp,encoding-name=
 gst-launch --gst-debug=4 udpsrc port=8554 caps="application/x-rtp,encoding-name=JPEG,payload=26" ! rtpjpegdepay ! jpegparse ! queue ! jpegdec ! autovideosink
 ```
 ```
-GST_DEBUG=4 ./cvgst
+GST_DEBUG=4 ./QtGstVideoPlayer
 ```
