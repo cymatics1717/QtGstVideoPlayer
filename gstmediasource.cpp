@@ -2,14 +2,18 @@
 
 #include <opencv2/opencv.hpp>
 
-gstMediaSource::gstMediaSource(QObject *parent) : QObject(parent)
-  ,status(GST_STATE_NULL),pipeline(NULL),appsink(NULL)
-{
-}
+gstMediaSource::gstMediaSource(QObject *parent) : QObject(parent),
+    status(GST_STATE_NULL),pipeline(NULL),appsink(NULL)
+  ,imageProvider(new myImageProvider(QQuickImageProvider::Image)){}
 
 gstMediaSource::~gstMediaSource()
 {
     deInit();
+}
+
+QPixmap gstMediaSource::requestPixmap(const QString &id, QSize *size, const QSize &requestedSize)
+{
+    return QPixmap::fromImage(imageProvider->img);
 }
 
 static GstFlowReturn new_preroll(GstAppSink *appsink, gpointer data)
@@ -56,12 +60,13 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
 
     GstMapInfo map;
     gst_buffer_map (buffer, &map, GST_MAP_READ);
-
+//    g_print("%s:%d\t%p %dx%d\n",__FUNCTION__,__LINE__,map.data,width,height);
 
     gstMediaSource *self = static_cast<gstMediaSource*>(data);
     if(self){
         QImage img = QImage(map.data,width,height,QImage::Format_RGB888);
 //        img.save( "snapshot.jpg");
+        self->imageProvider->img = img;
         emit self->incoming(QPixmap::fromImage(img));
     }
 
@@ -82,7 +87,7 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
 
 static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data)
 {
-//    g_print ("Got %s message from %s\n", GST_MESSAGE_TYPE_NAME (message), GST_OBJECT_NAME (message->src));
+    g_print ("Got %s message from %s\n", GST_MESSAGE_TYPE_NAME (message), GST_OBJECT_NAME (message->src));
     switch (GST_MESSAGE_TYPE (message))
     {
     case GST_MESSAGE_ERROR:
@@ -97,6 +102,12 @@ static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data
         break;
     }
     case GST_MESSAGE_EOS:
+    {
+        gstMediaSource *self = static_cast<gstMediaSource*>(data);
+        if(self){
+            self->endOfStream();
+        }
+    }
         //quit_flag = 1;
         break;
     case GST_MESSAGE_STATE_CHANGED:
@@ -195,5 +206,13 @@ void gstMediaSource::getFrame()
 {
     if(appsink && !gst_app_sink_is_eos(appsink) ) {
         g_main_context_iteration(NULL,false);
+    }
+}
+
+void gstMediaSource::endOfStream()
+{
+    if(pipeline){
+        g_print ("%s:over!\n",__FUNCTION__);
+        gst_element_set_state (pipeline, GST_STATE_NULL);
     }
 }

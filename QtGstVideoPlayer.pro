@@ -4,14 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui quick
 
 CONFIG += link_pkgconfig c++11
 PKGCONFIG += opencv gstreamer-1.5 gstreamer-base-1.5 gstreamer-video-1.5 gstreamer-app-1.5
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = cvgst
+TARGET = QtGstVideoPlayer
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -31,10 +31,15 @@ SOURCES += \
 #    test.cpp \
         mainwindow.cpp \
     gstmediasource.cpp
+#\ myimageprovider.cpp
 
 HEADERS += \
         mainwindow.h \
     gstmediasource.h
+#\ myimageprovider.h
 
 FORMS += \
         mainwindow.ui
+
+RESOURCES += \
+    src.qrc
