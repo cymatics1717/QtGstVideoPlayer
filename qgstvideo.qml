@@ -24,6 +24,14 @@ Window {
         }
     }
 
+    Text {
+        id: txt
+        anchors.centerIn: parent
+        text: "Hello World!"
+        font.pointSize: 100
+        color: "steelblue"
+    }
+
     Connections {
         target: source
 
