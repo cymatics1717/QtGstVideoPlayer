@@ -7,14 +7,20 @@ Window {
     height: 600
 
     Image {
-        id:media
+        id: media
         anchors.fill: parent
+        fillMode: Image.PreserveAspectFit
     }
+
     Connections {
         target: source
+
         onIncoming: {
-            media.source=""
-            media.source= "image://source/source"
+            var cnt = Math.random()
+//            console.log("-------",++cnt,image)
+//            source.test(cnt)
+//            media.source=""
+            media.source= "image://pool/"+cnt
         }
     }
 }

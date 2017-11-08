@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("source",&source);
-    engine.addImageProvider("source",source.imageProvider);
+    engine.addImageProvider("pool",source.imageProvider);
     engine.load(QUrl("qrc:/qgstvideo.qml"));
 
     MainWindow w(argc,argv);

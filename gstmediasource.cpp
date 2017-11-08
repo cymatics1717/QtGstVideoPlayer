@@ -1,19 +1,16 @@
 #include "gstmediasource.h"
 
 #include <opencv2/opencv.hpp>
-
+#include <QDebug>
 gstMediaSource::gstMediaSource(QObject *parent) : QObject(parent),
-    status(GST_STATE_NULL),pipeline(NULL),appsink(NULL)
-  ,imageProvider(new myImageProvider(QQuickImageProvider::Image)){}
+    status(GST_STATE_NULL),pipeline(NULL),appsink(NULL),imageProvider(new myImageProvider)
+{
+
+}
 
 gstMediaSource::~gstMediaSource()
 {
     deInit();
-}
-
-QPixmap gstMediaSource::requestPixmap(const QString &id, QSize *size, const QSize &requestedSize)
-{
-    return QPixmap::fromImage(imageProvider->img);
 }
 
 static GstFlowReturn new_preroll(GstAppSink *appsink, gpointer data)
@@ -44,7 +41,7 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
         if(!caps)
         {
             g_print("Could not get image info from filter caps");
-            exit(-11);
+            return GST_FLOW_CUSTOM_ERROR_1;
         }
 
         s = gst_caps_get_structure(caps,0);
@@ -53,7 +50,7 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
         if(!res)
         {
             g_print("Could not get image width and height from filter caps");
-            exit(-12);
+            return GST_FLOW_CUSTOM_ERROR_2;
         }
         g_print("Image size: %d\t%d\n",width,height);
     }
@@ -66,8 +63,10 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
     if(self){
         QImage img = QImage(map.data,width,height,QImage::Format_RGB888);
 //        img.save( "snapshot.jpg");
-        self->imageProvider->img = img;
-        emit self->incoming(QPixmap::fromImage(img));
+        self->imageProvider->img = QPixmap::fromImage(img);
+        emit self->incoming(self->imageProvider->img);
+
+//        emit self->incoming();
     }
 
 //    cv::Mat frame(cv::Size(width, height), CV_8UC3, (char*)map.data, cv::Mat::AUTO_STEP);
@@ -200,6 +199,11 @@ int gstMediaSource::deInit()
         gst_element_set_state (pipeline, GST_STATE_NULL);
         gst_object_unref (pipeline);
     }
+}
+
+void gstMediaSource::test(double fromQML)
+{
+    qDebug() << fromQML;
 }
 
 void gstMediaSource::getFrame()
