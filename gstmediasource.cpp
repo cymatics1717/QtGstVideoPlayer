@@ -21,9 +21,50 @@ static GstFlowReturn new_preroll(GstAppSink *appsink, gpointer data)
     return GST_FLOW_OK;
 }
 
+static QImage matToQImage( const cv::Mat &mat )
+{
+    switch (mat.type())
+    {
+    case CV_8UC4:
+    {
+        QImage image( mat.data,
+                      mat.cols, mat.rows,
+                      static_cast<int>(mat.step),
+                      QImage::Format_ARGB32 );
+
+        return image;
+    }
+
+    case CV_8UC3:
+    {
+        QImage image( mat.data,
+                      mat.cols, mat.rows,
+                      static_cast<int>(mat.step),
+                      QImage::Format_RGB888 );
+
+        return image.rgbSwapped();
+    }
+
+    case CV_8UC1:
+    {
+        QImage image( mat.data,
+                      mat.cols, mat.rows,
+                      static_cast<int>(mat.step),
+                      QImage::Format_Grayscale8 );
+        return image;
+    }
+
+    default:
+        qWarning() << "cv::Mat image type not handled in switch:" << mat.type();
+        break;
+    }
+
+    return QImage();
+}
+
 static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
 {
-//    g_print("%s:%d\n",__FUNCTION__,__LINE__);
+    //    g_print("%s:%d\n",__FUNCTION__,__LINE__);
     static int framecount = 0;
     framecount++;
 
@@ -57,26 +98,28 @@ static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data)
 
     GstMapInfo map;
     gst_buffer_map (buffer, &map, GST_MAP_READ);
-//    g_print("%s:%d\t%p %dx%d\n",__FUNCTION__,__LINE__,map.data,width,height);
+    //    g_print("%s:%d\t%p %dx%d\n",__FUNCTION__,__LINE__,map.data,width,height);
 
     gstMediaSource *self = static_cast<gstMediaSource*>(data);
     if(self){
+
+        cv::Mat buf,edges,frame(cv::Size(width, height), CV_8UC3, (char*)map.data, cv::Mat::AUTO_STEP);
+        cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(30, 30));
+        cv::morphologyEx(frame, buf, cv::MORPH_CLOSE, element);
+        cv::bitwise_not(buf, edges);
+        cv::cvtColor(edges, edges, CV_BGR2GRAY);
+        cv::adaptiveThreshold(edges, edges,255,CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,19,3);
+
+        cv::Canny(edges, edges, 0, 1, 3);
+//        cv::cvtColor(frame,frame,CV_BGR2RGB);
+
+
         QImage img = QImage(map.data,width,height,QImage::Format_RGB888);
-//        img.save( "snapshot.jpg");
+//        QImage img = matToQImage(edges);
         self->imageProvider->img = QPixmap::fromImage(img);
         emit self->incoming(self->imageProvider->img);
 
-//        emit self->incoming();
     }
-
-//    cv::Mat frame(cv::Size(width, height), CV_8UC3, (char*)map.data, cv::Mat::AUTO_STEP);
-//    cv::Mat edges;
-//    cv::cvtColor(frame, edges, CV_RGB2GRAY);
-//    cv::GaussianBlur(edges, edges, cv::Size(7,7), 1.5, 1.5);
-//    cv::Canny(edges, edges, 0, 10, 3);
-//    cv::imshow("stream", edges);
-//    cv::cvtColor(frame,frame,CV_BGR2RGB);
-//    imshow("origin", frame);
 
     gst_buffer_unmap(buffer, &map);
 
@@ -133,7 +176,7 @@ int gstMediaSource::init(QString cmd, int argc, char *argv[],bool atonce)
     bool ans = gst_init_check(&argc, &argv,&error);
     if(ans){
         g_print("initing GStreamer version: %s",gst_version_string());
-//        g_print("%s\n", cv::getBuildInformation().c_str());
+        //        g_print("%s\n", cv::getBuildInformation().c_str());
 
         gst_init (&argc, &argv);
 
@@ -147,14 +190,14 @@ int gstMediaSource::init(QString cmd, int argc, char *argv[],bool atonce)
             GstStateChangeReturn ret = gst_element_set_state(pipeline, GST_STATE_PAUSED);
             switch(ret)
             {
-                case GST_STATE_CHANGE_FAILURE:
-                    g_print ("failed to play the file\n");
-                case GST_STATE_CHANGE_NO_PREROLL:
-                    g_print ("live source detected\n");
-//                    live_flag = 1;
-                    break;
-                default:
-                    break;
+            case GST_STATE_CHANGE_FAILURE:
+                g_print ("failed to play the file\n");
+            case GST_STATE_CHANGE_NO_PREROLL:
+                g_print ("live source detected\n");
+                //                    live_flag = 1;
+                break;
+            default:
+                break;
             }
 
             gst_app_sink_set_emit_signals(appsink, true);

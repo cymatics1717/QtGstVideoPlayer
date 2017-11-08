@@ -28,11 +28,9 @@ Window {
         target: source
 
         onIncoming: {
-            var cnt = Math.random()
-//            console.log("-------",++cnt,image)
 //            source.test(cnt)
 //            media.source=""
-            media.source= "image://pool/"+cnt
+            media.source= "image://pool/"+Math.random()
         }
     }
     NumberAnimation {
@@ -41,11 +39,15 @@ Window {
         property: "rotation"
         from: 0
         to: 360
-        duration: 1000
+        duration: 5000
     }
 
     MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        onEntered: {
+            animation.running = true;
+        }
         onClicked: {
             animation.running = true;
         }
