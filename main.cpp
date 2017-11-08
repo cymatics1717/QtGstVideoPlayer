@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
     engine.addImageProvider("pool",source.imageProvider);
     engine.load(QUrl("qrc:/qgstvideo.qml"));
 
-    MainWindow w(argc,argv);
-    w.statusBar()->showMessage(cmd);
-    QObject::connect(&source,SIGNAL(incoming(QPixmap)),w.label(),SLOT(setPixmap(QPixmap)));
-    w.show();
+//    MainWindow w(argc,argv);
+//    w.statusBar()->showMessage(cmd);
+//    QObject::connect(&source,SIGNAL(incoming(QPixmap)),w.label(),SLOT(setPixmap(QPixmap)));
+//    w.show();
 
     return a.exec();
 }
